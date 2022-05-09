@@ -12,16 +12,6 @@ class Cell:
 		self.pos_x = 0
 		self.pos_y = 0
 
-	def parse_genome(self):
-		for gene in self.genome:
-			if (gene[0:2], gene[2:4]) not in self.brain.edges:
-				self.brain.add_edge(
-					gene[0:2],
-					gene[2:4],
-					weight = normalise(int(gene[4:6], 16)) * 4.0) 
-		for neuron in self.brain.nodes:
-			self.brain.nodes[neuron]['output'] = 0.0
-
 	def decode_genome(self, genome, neurons):
 		for gene in genome:
 			for i in range(0, len(gene), 2):
