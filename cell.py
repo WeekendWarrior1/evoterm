@@ -1,7 +1,7 @@
 import networkx as nx
 from random import randint, random
 from math import tanh
-from functions_general import *
+from funcs import *
 
 class Cell:
 	def __init__(self, genome, neurons):
@@ -46,7 +46,7 @@ class Cell:
 	def check_sensory(self):
 		for neuron in self.brain.nodes: 
 			if self.neurons[neuron]['type'] == 'sensory':
-				"""if randint(0, 10) > 7:
+				"""if randint(0, 1):
 					self.brain.nodes[str(neuron)]['output'] = 1.0
 				else: 
 					self.brain.nodes[str(neuron)]['output'] = 0.0"""
@@ -56,9 +56,10 @@ class Cell:
 		inputs_sum = 0
 		for u_neuron, v_neuron, data in self.brain.edges(data=True): 
 			if v_neuron == neuron:
-				inputs_sum += data['weight'] * self.brain.nodes[str(neuron)]['output']
-		#self.brain.nodes[str(neuron)]['output'] = ((tanh(inputs_sum)+0.01)/2)
-		#self.brain.nodes[str(neuron)]['output'] = ((max(0, inputs_sum)+0.1)/2)
+				inputs_sum += \
+				data['weight'] * self.brain.nodes[neuron]['output']
+		self.brain.nodes[str(neuron)]['output'] = ((tanh(inputs_sum)+1)/2)
+		#self.brain.nodes[str(neuron)]['output'] = ((max(0, inputs_sum)+1)/2)
 
 	def step(self):
 		self.check_sensory()

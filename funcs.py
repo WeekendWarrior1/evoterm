@@ -1,5 +1,6 @@
 from os import system, name
 from random import sample
+from time import sleep
 
 def clear():
 	if name == 'nt':
@@ -49,4 +50,18 @@ def random_gene(neurons, v_neuron=''):
 		u_neuron = (
 				f'{1}'
 				f'{neurons[u_neuron]["index"]}')
-		return random_gene(neurons, v_neuron=u_neuron)					
+		return random_gene(neurons, v_neuron=u_neuron)	
+
+def test(cells, cell, duration=100):
+	for i in range(duration):
+		clear()
+		cells[cell].step()
+
+		print(
+			f'Current step : {i}\n'
+			f'Current x    : {cells[cell].pos_x}\n'
+			f'aMvX output  : {cells[cell].brain.nodes["aMvX"]["output"]}\n'
+			f'Current y    : {cells[cell].pos_y}\n'
+			f'aMvY output  : {cells[cell].brain.nodes["aMvY"]["output"]}\n')
+
+		sleep(0.1)				
