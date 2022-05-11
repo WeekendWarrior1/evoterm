@@ -1,6 +1,5 @@
 import networkx as nx
 from random import randint, random
-from math import tanh
 from funcs import *
 
 class Cell:
@@ -12,51 +11,48 @@ class Cell:
 		self.pos_x = 0
 		self.pos_y = 0
 
+	def check_neuron_type(self, gene, i):
+		return f'''{[
+			neuron for neuron in self.neurons 
+			if (self.neurons[neuron]["type"] 
+			== ["sensory","action","internal"][int(gene[i])]) 
+			and (self.neurons[neuron]["index"] 
+			== int(gene[i+1]))][0]}'''
+
 	def decode_genome(self, genome, neurons):
 		for gene in genome:
 			for i in range(0, len(gene), 2):
-				if i in [0,2]:					
-					neuron = ''.join(
-						[neuron for neuron in self.neurons \
-						if (self.neurons[neuron]['type'] == \
-						['sensory','action','internal'][int(gene[i])]) \
-						and (self.neurons[neuron]['index'] == \
-						int(gene[i+1]))])
-					if i == 0:
-						u_neuron = neuron
-					elif i == 2:
-						v_neuron = neuron
-				elif i == 4:
-					weight = normalise(int(gene[4:6], 16)) * 4.0
+				if i != 4:
+					if not i:
+						u_neuron = self.check_neuron_type(gene, i)
+					else:
+						v_neuron = self.check_neuron_type(gene, i)
 			if (u_neuron, v_neuron) not in self.brain.edges:
-				self.brain.add_edge(u_neuron, v_neuron, weight=weight)
+				self.brain.add_edge(
+					u_neuron, 
+					v_neuron, 
+					weight = normalise(int(gene[4:6], 16)) * 4.0)
 		for node in self.brain.nodes:
 			self.brain.nodes[node]['output'] = 0.5		
 
 	def check_sensory(self):
 		for neuron in self.brain.nodes: 
 			if self.neurons[neuron]['type'] == 'sensory':
-				"""if randint(0, 1):
-					self.brain.nodes[str(neuron)]['output'] = 1.0
-				else: 
-					self.brain.nodes[str(neuron)]['output'] = 0.0"""
-				self.brain.nodes[str(neuron)]['output'] = random()
+				self.brain.nodes[neuron]['output'] = random()
 
 	def sum_neuron_inputs(self, neuron):
-		inputs_sum = 0
-		for u_neuron, v_neuron, data in self.brain.edges(data=True): 
-			if v_neuron == neuron:
-				inputs_sum += \
-				data['weight'] * self.brain.nodes[neuron]['output']
-		self.brain.nodes[str(neuron)]['output'] = ((tanh(inputs_sum)+1)/2)
-		#self.brain.nodes[str(neuron)]['output'] = ((max(0, inputs_sum)+1)/2)
+		self.brain.nodes[neuron]['output'] = activation(
+			sum([
+				(data['weight'] * self.brain.nodes[neuron]['output']) \
+				for u_neuron, v_neuron, data in self.brain.edges(data=True) \
+				if v_neuron == neuron]), 
+			'tanh')
 
 	def step(self):
 		self.check_sensory()
-		for neuron_type in ['internal', 'action']:
-			for neuron in self.brain.nodes:
-				if self.neurons[neuron]['type'] == neuron_type:
-					self.sum_neuron_inputs(neuron)
+		for neuron in self.brain.nodes:
+			if self.neurons[neuron]['type'] in ['internal', 'action']:
+				self.sum_neuron_inputs(neuron)
 		self.an_move_x()
 		self.an_move_y()
 	

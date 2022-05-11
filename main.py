@@ -14,7 +14,7 @@ def main():
 
 	cells = {i : Cell(random_genome(genes, neurons), neurons) for i in range(1)}
 	
-	plot(cells[0], neurons)
+	#plot(cells[0], neurons)
 
 	test(cells, 0)
 	

@@ -1,6 +1,8 @@
 from os import system, name
-from random import sample
+from math import tanh
+from random import sample, getrandbits
 from time import sleep
+
 
 def clear():
 	if name == 'nt':
@@ -8,16 +10,22 @@ def clear():
 	else:
 		_ = system('clear')
 
-def normalise(value):
-	if value < 128:
-		return -(1.0 - (value / 128))
+def normalise(x):
+	if x < 128:
+		return -(1.0 - (x / 128))
 	else:
-		return ((value - 127) / 128)
+		return ((x - 127) / 128)
+
+def activation(x, func, bias=1):
+	if func == 'tanh':
+		return (tanh(x) + bias) / 2
+	elif func == 'ReLU':
+		return (max(0, x) + bias) / 2
 
 def update_neurons_dict(neurons, internal_neurons):
 	updated_neurons = {}
 	for neuron in neurons:
-		if neurons[neuron]['active'] == True:
+		if neurons[neuron]['active']:
 			updated_neurons[str(neuron)] = neurons[neuron]
 	for i in range(internal_neurons):	
 		updated_neurons[f'i{i}'] = {
@@ -25,32 +33,24 @@ def update_neurons_dict(neurons, internal_neurons):
 	return updated_neurons
 
 def random_genome(genes, neurons):
-	genome = []
-	for i in range(genes):
-		genome.append(random_gene(neurons))
-	return genome
+	return [random_gene(neurons) for i in range(genes)]
 
 def random_gene(neurons, v_neuron=''):
-	u_neuron = ''.join(sample(list(neurons), 1))
-	if neurons[u_neuron]['type'] in ['sensory', 'internal']:
+	u_neuron = sample([*neurons], 1)[0]
+	if neurons[u_neuron]['type'] != 'action':
 		u_neuron = (
 			f'{0 if neurons[u_neuron]["type"] == "sensory" else 2}'
 			f'{neurons[u_neuron]["index"]}')
-		if len(v_neuron) == 0:
-			v_neuron = ''.join(sample([
+		if not v_neuron:
+			v_neuron = sample([
 				neuron for neuron in neurons \
-				if neurons[neuron]['type'] in ['action', 'internal']], 1))
+				if neurons[neuron]['type'] != 'sensory'], 1)[0]
 			v_neuron = (
 				f'{1 if neurons[v_neuron]["type"] == "action" else 2}'
 				f'{neurons[v_neuron]["index"]}')
-		weight = ''.join(sample('0123456789abcdef', 2))
-		gene = ''.join((u_neuron, v_neuron, weight))
-		return gene
+		return f'{u_neuron}{v_neuron}{"%0x" % getrandbits(8)}'
 	else:
-		u_neuron = (
-				f'{1}'
-				f'{neurons[u_neuron]["index"]}')
-		return random_gene(neurons, v_neuron=u_neuron)	
+		return random_gene(neurons, v_neuron=f'{1}{neurons[u_neuron]["index"]}')	
 
 def test(cells, cell, duration=100):
 	for i in range(duration):
