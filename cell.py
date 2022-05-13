@@ -16,7 +16,7 @@ class Cell:
 			neuron for neuron in self.neurons 
 			if (self.neurons[neuron]["type"] 
 			== ["sensory","action","internal"][int(gene[i])]) 
-			and (self.neurons[neuron]["index"] 
+			and (self.neurons[neuron]["id"] 
 			== int(gene[i+1]))][0]}'''
 
 	def decode_genome(self, genome, neurons):
