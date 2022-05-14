@@ -7,6 +7,7 @@ term = Terminal()
 
 print(term.clear)
 
+
 def grid():
 	for x, y in product(range(18), range(18)):
 		if y in [0, 17] and x not in [0, 17]:

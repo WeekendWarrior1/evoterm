@@ -1,4 +1,5 @@
-import base64, random
+import base64
+import random
 import bitarray
 
 def populate_neurons(internal_neurons):
@@ -6,8 +7,10 @@ def populate_neurons(internal_neurons):
 		'sDet' : {'type':'sensory', 'id':0},
 		'aMvX' : {'type':'action', 'id':0},
 		'aMvY' : {'type':'action', 'id':1}}
+	
 	for i in range(internal_neurons):	
 		neurons[f'i{i}'] = {'type':'internal', 'id':i}
+	
 	return neurons
 
 
@@ -22,10 +25,13 @@ def encode_genome(neurons, genes, base64=0):
 
 def encode_gene(neurons):
 	gene = bitarray.bitarray(12)
+	
 	for i in range(12):
 		gene[i] = random.getrandbits(1)
+	
 	gene += encode_neuron(neurons, 'action')
 	gene += encode_neuron(neurons, 'sensory')
+	
 	return gene
 
 
@@ -40,3 +46,4 @@ def encode_neuron(neurons, neuron_type):
 		['id']), start=2):
 		neuron[-i] = int(e)
 	return neuron
+
