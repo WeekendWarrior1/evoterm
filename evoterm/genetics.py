@@ -36,14 +36,5 @@ def encode_gene(neurons):
 
 
 def encode_neuron(neurons, neuron_type):
-	neuron = bitarray.bitarray('000000')
-	neuron[-1] = random.getrandbits(1)
-	for i,e in enumerate(
-		'{:b}'.format(neurons[random.sample([
-		neuron for neuron in neurons \
-		if neurons[neuron]['type'] \
-		== ('internal' if neuron[-1] == 1 else neuron_type)], 1)[0]]\
-		['id']), start=2):
-		neuron[-i] = int(e)
-	return neuron
+	return bitarray.bitarray(random.getrandbits(1) for i in range(6))
 

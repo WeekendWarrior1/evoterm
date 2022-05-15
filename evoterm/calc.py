@@ -7,9 +7,9 @@ def normalise(polarity, x, x_min=0, x_max=2048):
 	return (x - x_min) / (x_max - x_min)
 
 
-def activation(x, func, bias=1):
+def activation(x, func, bias=0):
 	if func == 'tanh':
-		return (math.tanh(x) + bias) / 2
+		return (math.tanh(x) + bias)
 	elif func == 'ReLU':
 		return (max(0, x) + bias) / 2
 
