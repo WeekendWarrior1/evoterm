@@ -14,7 +14,7 @@ def run_environment(args):
 	for i in range(args.cells):
 		cells[i] = cell.Cell(genetics.encode_genome(neurons, args.genes), neurons)
 	#plot(cells[0], cells[0].neurons)
-	env = renderer.Environment(cells, 64)
+	env = renderer.Environment(cells, args.environment)
 	env.simulate()
 	#time.sleep(5)
 

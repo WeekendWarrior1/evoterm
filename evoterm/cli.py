@@ -16,6 +16,10 @@ def get_args():
 		'-c', '--cells',
 		metavar='', type=int, nargs='?', const=1, default=50, 
 		help='number of cells')
+	parser.add_argument(
+		'-e', '--environment',
+		metavar='', type=int, nargs='?', const=1, default=64,
+		help='size of environment')
 	
 	return parser.parse_args()	
 
