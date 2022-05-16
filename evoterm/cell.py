@@ -16,25 +16,6 @@ class Cell:
 		self.pos_x = 0
 		self.pos_y = 0
 
-	def mutate(self, gene):
-		gene[random.sample([i for i in range(24)], 1)[0]] = random.getrandbits(1)
-		return gene
-
-	def get_colour(self, gene):
-		r = bitarray.util.ba2int(gene[0:8])
-		g = bitarray.util.ba2int(gene[8:16])
-		b = bitarray.util.ba2int(gene[16:24])
-		return [r, g, b]
-
-	def average_colour(self, colours_in, colours_out):
-		for i in range(3):
-			tmp = []
-			for colour in colours_in:
-				tmp.append(colour[i])
-			colours_out.append(sum(tmp) // len(tmp))
-
-		return colours_out
-
 	def decode_genome(self, mutation_chance=0.01):
 		colours = []
 		for gene in self.genome:
@@ -75,8 +56,27 @@ class Cell:
 				min(
 					[(neuron_id_range / len(neurons)) * i for i in range(len(neurons))],
 					key=lambda x:abs(x - neuron_id)))][0]}'''
+
+	def mutate(self, gene):
+		gene[random.sample([i for i in range(24)], 1)[0]] = random.getrandbits(1)
+		return gene
+
+	def get_colour(self, gene):
+		r = bitarray.util.ba2int(gene[0:8])
+		g = bitarray.util.ba2int(gene[8:16])
+		b = bitarray.util.ba2int(gene[16:24])
+		return [r, g, b]
+
+	def average_colour(self, colours_in, colours_out):
+		for i in range(3):
+			tmp = []
+			for colour in colours_in:
+				tmp.append(colour[i])
+			colours_out.append(sum(tmp) // len(tmp))
+
+		return colours_out
 	
-	def step(self):
+	def fire_neurons(self, env_size):
 		self.check_sensory()
 		
 		for neuron in self.brain.nodes:
@@ -84,9 +84,9 @@ class Cell:
 				self.sum_neuron_inputs(neuron)
 		
 		if 'aMvX' in self.brain.nodes:
-			self.action_move_x()
+			self.action_move_x(env_size)
 		if 'aMvY' in self.brain.nodes:
-			self.action_move_y()
+			self.action_move_y(env_size)
 
 	def check_sensory(self):
 		for neuron in self.brain.nodes: 
@@ -101,15 +101,19 @@ class Cell:
 				if v_neuron == neuron]), 
 			'tanh')
 
-	def action_move_x(self):
+	def action_move_x(self, env_size):
 		if self.brain.nodes['aMvX']['output'] >= 0.1:
-			self.pos_x += 1
+			if (self.pos_x + 1) <= env_size:
+				self.pos_x += 1
 		elif self.brain.nodes['aMvX']['output'] <= (-0.1):
-			self.pos_x -= 1
+			if (self.pos_x - 1) >= 1:
+				self.pos_x -= 1
 
-	def action_move_y(self):
+	def action_move_y(self, env_size):
 		if self.brain.nodes['aMvY']['output'] >= 0.1:
-			self.pos_y += 1
+			if (self.pos_y + 1) <= env_size:
+				self.pos_y += 1
 		elif self.brain.nodes['aMvY']['output'] <= (-0.1):
-			self.pos_y -= 1
+			if (self.pos_y - 1) >= 1:
+				self.pos_y -= 1
 

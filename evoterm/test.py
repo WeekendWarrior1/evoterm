@@ -3,20 +3,20 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import cell
 import cli
+import environment
 import genetics
-import renderer
+
 
 
 def run_environment(args):
 	neurons = genetics.populate_neurons(args.neurons)	
-	cells = {}
+	cells = []
 
 	for i in range(args.cells):
-		cells[i] = cell.Cell(genetics.encode_genome(neurons, args.genes), neurons)
+		cells.append(cell.Cell(genetics.encode_genome(neurons, args.genes), neurons))
 	#plot(cells[0], cells[0].neurons)
-	env = renderer.Environment(cells, args.environment)
-	env.simulate()
-	#time.sleep(5)
+	env = environment.Environment(env_size = args.environment)
+	env.simulate_generation(cells, 100)
 
 
 def run(args, duration=100):
