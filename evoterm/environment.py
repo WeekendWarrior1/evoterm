@@ -22,17 +22,11 @@ class Environment:
 			i = 0	
 			while len(cells):	
 				print(term.move_xy(self.env_size + 8, 0) + term.white(str(i)))
-				index = calc.thue_morse_index(i, len(cells))
-				print(term.move_xy(self.env_size + 8, 1) + term.white(str(len(cells))))
-					
-				self.move_cell(cells[index], ' ')
-				cells[index].fire_neurons(self.env_size)
+				print(term.move_xy(self.env_size + 8, 1) + term.white(str(len(cells))))	
 				
-				if random.randint(0, 25) == 1:
-					del cells[index]
-				else: 
-					self.move_cell(cells[index], '@')
-				time.sleep(0.041666666666666664)
+				self.process_cell(cells, calc.thue_morse_index(i, len(cells)))
+
+				#time.sleep(0.041666666666666664)
 				i += 1
 
 	def init_env_ui(self):
@@ -67,11 +61,24 @@ class Environment:
 			self.occupied_coordinates.append((x, y))
 			return (x, y)
 	
-	def move_cell(self, cell, char=''):
+	def process_cell(self, cells, index):
+		self.move_cell(cells[index], ' ')
+		self.occupied_coordinates.remove(
+			(cells[index].pos_x, cells[index].pos_y))
+		cells[index].fire_neurons(self.env_size, self.occupied_coordinates)
+		if random.randint(1, 250) == 0:
+			del cells[index]
+		else: 
+			self.move_cell(cells[index], '@')
+			self.occupied_coordinates.append(
+			(cells[index].pos_x, cells[index].pos_y))
+
+	def move_cell(self, cell, char=''):	
 		print(
 			term.move_xy(cell.pos_x, cell.pos_y) + 
 			term.color_rgb(cell.colour[0], cell.colour[1], cell.colour[2]) + 
 			char)
+
 
 
 

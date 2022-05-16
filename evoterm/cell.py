@@ -76,17 +76,14 @@ class Cell:
 
 		return colours_out
 	
-	def fire_neurons(self, env_size):
+	def fire_neurons(self, env_size, occupied_coordinates):
 		self.check_sensory()
 		
 		for neuron in self.brain.nodes:
 			if self.neurons[neuron]['type'] in ['internal', 'action']:
 				self.sum_neuron_inputs(neuron)
 		
-		if 'aMvX' in self.brain.nodes:
-			self.action_move_x(env_size)
-		if 'aMvY' in self.brain.nodes:
-			self.action_move_y(env_size)
+		self.process_movement(occupied_coordinates, env_size)
 
 	def check_sensory(self):
 		for neuron in self.brain.nodes: 
@@ -101,19 +98,36 @@ class Cell:
 				if v_neuron == neuron]), 
 			'tanh')
 
-	def action_move_x(self, env_size):
-		if self.brain.nodes['aMvX']['output'] >= 0.1:
-			if (self.pos_x + 1) <= env_size:
-				self.pos_x += 1
-		elif self.brain.nodes['aMvX']['output'] <= (-0.1):
-			if (self.pos_x - 1) >= 1:
-				self.pos_x -= 1
+	def process_movement(self, occupied_coordinates, env_size):
+		if 'aMvX' in self.brain.nodes:
+			x = self.brain.nodes['aMvX']['output']	
+			if x >= 0.1:
+				if (self.pos_x + 1) <= env_size:
+					x = 1
+			elif x <= (-0.1):
+				if (self.pos_x - 1) >= 1:
+					x = (-1)
+			else:
+				x = 0
+		else: 
+			x = 0
 
-	def action_move_y(self, env_size):
-		if self.brain.nodes['aMvY']['output'] >= 0.1:
-			if (self.pos_y + 1) <= env_size:
-				self.pos_y += 1
-		elif self.brain.nodes['aMvY']['output'] <= (-0.1):
-			if (self.pos_y - 1) >= 1:
-				self.pos_y -= 1
+		if 'aMvY' in self.brain.nodes:
+			y = self.brain.nodes['aMvY']['output']
+			if y >= 0.1:
+				if (self.pos_y + 1) <= env_size:
+					y = 1
+			elif y <= (-0.1):
+				if (self.pos_y - 1) >= 1:
+					y = (-1)
+			else:
+				y = 0
+		else:
+			y = 0
+
+		for i in [(-1), 0, 1]:
+			if (self.pos_x + x, self.pos_y + i) not in occupied_coordinates:
+				if y == i:
+					self.pos_x += int(x)
+					self.pos_y += int(i)
 
