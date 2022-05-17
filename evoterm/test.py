@@ -10,30 +10,9 @@ import genetics
 
 def run_environment(args):
 	neurons = genetics.populate_neurons(args.neurons)	
-
 	#plot(cells[0], cells[0].neurons)
 	env = environment.Environment(args, neurons)
 	env.simulate_generation()
-
-
-def run(args, duration=100):
-	neurons = genetics.populate_neurons(args.neurons)	
-	cells = {}
-	
-	for i in range(args.cells):
-		cells[i] = cell.Cell(genetics.encode_genome(neurons, args.genes), neurons)
-	
-	for i in range(duration):
-		cli.clear()
-		cells[0].step()
-		print(f'Current step : {i}\n')
-		if 'aMvX' in cells[0].brain.nodes:
-			print(f'Current x    : {cells[0].pos_x}\n')
-			print(f'aMvX output  : {cells[0].brain.nodes["aMvX"]["output"]}\n')
-		if 'aMvY' in cells[0].brain.nodes:
-			print(f'Current y    : {cells[0].pos_y}\n')
-			print(f'aMvY output  : {cells[0].brain.nodes["aMvY"]["output"]}\n')
-		time.sleep(0.1)
 
 
 def plot(cell, neurons):
