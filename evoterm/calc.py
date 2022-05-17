@@ -1,4 +1,5 @@
 import math
+import time
 
 
 def normalise(polarity, x, x_min=0, x_max=2048):
@@ -11,7 +12,7 @@ def activation(x, func, bias=0):
 	if func == 'tanh':
 		return (math.tanh(x) + bias)
 	elif func == 'ReLU':
-		return (max(0, x) + bias) / 2
+		return (max(0, x) + bias)
 
 
 def thue_morse_index(number, base):
@@ -24,6 +25,12 @@ def thue_morse_index(number, base):
         digits.append(int(number % base))
         number //= base
     return sum(digits[::-1]) % base
+
+def nap_duration(timestamp, frame_rate=1):
+	nap = ((1000000000 / frame_rate) - (time.time_ns() - timestamp)) / 1000000000
+	if nap > 0: 
+		time.sleep(nap)
+
 
 
 

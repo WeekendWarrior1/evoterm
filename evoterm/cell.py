@@ -1,20 +1,25 @@
 import random
+import itertools
 import networkx as nx 
 import bitarray
 import bitarray.util
 import calc
+import genetics
 
 
 class Cell:
 	
-	def __init__(self, genome, neurons):
+	def __init__(self, genome, neurons, x=0, y=0):
 		self.brain = nx.DiGraph()
 		self.neurons = neurons
 		self.genome = genome
 		self.colour = []
 		self.decode_genome()
-		self.pos_x = 0
-		self.pos_y = 0
+		self.neuron_functions = {
+			'sDet' : self.process_detect
+		}
+		self.x = x
+		self.y = y
 
 	def decode_genome(self, mutation_chance=0.01):
 		colours = []
@@ -76,19 +81,21 @@ class Cell:
 
 		return colours_out
 	
-	def fire_neurons(self, env_size, occupied_coordinates):
-		self.check_sensory()
+	def fire_neurons(self, cells, index, env_size, coordinates):
+		self.check_sensory(coordinates)
 		
 		for neuron in self.brain.nodes:
 			if self.neurons[neuron]['type'] in ['internal', 'action']:
 				self.sum_neuron_inputs(neuron)
 		
-		self.process_movement(occupied_coordinates, env_size)
+		self.process_movement(coordinates, env_size)
+		self.reproduce(cells, coordinates)
+		return self.death()
 
-	def check_sensory(self):
+	def check_sensory(self, coordinates):
 		for neuron in self.brain.nodes: 
 			if self.neurons[neuron]['type'] == 'sensory':
-				self.brain.nodes[neuron]['output'] = random.random()
+				self.neuron_functions[neuron](coordinates)
 
 	def sum_neuron_inputs(self, neuron):
 		self.brain.nodes[neuron]['output'] = calc.activation(
@@ -98,36 +105,53 @@ class Cell:
 				if v_neuron == neuron]), 
 			'tanh')
 
-	def process_movement(self, occupied_coordinates, env_size):
-		if 'aMvX' in self.brain.nodes:
-			x = self.brain.nodes['aMvX']['output']	
-			if x >= 0.1:
-				if (self.pos_x + 1) <= env_size:
-					x = 1
-			elif x <= (-0.1):
-				if (self.pos_x - 1) >= 1:
-					x = (-1)
-			else:
-				x = 0
-		else: 
-			x = 0
+	def process_movement(self, coordinates, env_size):	
+		neuron_data = [['aMvX', 0, self.x], ['aMvY', 0, self.y]]
+		for data in neuron_data:
+			if data[0] in self.brain.nodes:
+				if self.brain.nodes[data[0]]['output'] >= 0.9:
+					if (data[2] + 1) <= env_size:
+						data[1] = 1
+				elif self.brain.nodes[data[0]]['output'] <= (-0.9):
+					if (data[2] - 1) >= 1:
+						data[1] = -1
 
-		if 'aMvY' in self.brain.nodes:
-			y = self.brain.nodes['aMvY']['output']
-			if y >= 0.1:
-				if (self.pos_y + 1) <= env_size:
-					y = 1
-			elif y <= (-0.1):
-				if (self.pos_y - 1) >= 1:
-					y = (-1)
-			else:
-				y = 0
-		else:
-			y = 0
+		if coordinates\
+		[self.x + neuron_data[0][1]]\
+		[self.y + neuron_data[1][1]]\
+		['occupied'] == False:
+			self.x += neuron_data[0][1]
+			self.y += neuron_data[1][1]
 
-		for i in [(-1), 0, 1]:
-			if (self.pos_x + x, self.pos_y + i) not in occupied_coordinates:
-				if y == i:
-					self.pos_x += int(x)
-					self.pos_y += int(i)
+	def process_detect(self, coordinates):
+		presence = 0
+		open_space = []
+		for x, y in itertools.product(range(-1, 2), range(-1, 2)):
+			if x != 0 and y != 0:
+				if coordinates[self.x + x][self.y + y]['occupied'] == True:
+					presence += 1
+				elif coordinates[self.x + x][self.y + y]['occupied'] == False:
+					open_space.append((self.x + x, self.y + y))
+		self.brain.nodes['sDet']['output'] = (1 / 8) * presence
+		return open_space
 
+	def reproduce(self, cells, coordinates):
+		if random.randint(0, 100) == 0:
+			open_space = self.process_detect(coordinates)
+			if len(open_space) != 0:
+				x, y = random.sample(open_space, 1)[0]
+				cells.append(Cell(self.genome, self.neurons, x, y))
+				print(
+					term.move_xy(cells[-1].x, cells[-1].y) + 
+					term.color_rgb(cells[-1].colour[0], cells[-1].colour[1], cells[-1].colour[2]) + 
+					char)
+
+				coordinates[x][y]['occupied'] = True
+				coordinates[x][y]['occupant'] = cells[-1]
+
+	def death(self):
+		if random.randint(0, 100) == 0:
+			"""coordinates[self.x][self.y]['occupied'] = False
+			coordinates[self.x][self.y]['occupant'] = None
+			del cells[index]"""
+			return True

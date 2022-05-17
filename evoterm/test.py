@@ -10,13 +10,10 @@ import genetics
 
 def run_environment(args):
 	neurons = genetics.populate_neurons(args.neurons)	
-	cells = []
 
-	for i in range(args.cells):
-		cells.append(cell.Cell(genetics.encode_genome(neurons, args.genes), neurons))
 	#plot(cells[0], cells[0].neurons)
-	env = environment.Environment(env_size = args.environment)
-	env.simulate_generation(cells, 100)
+	env = environment.Environment(args, neurons)
+	env.simulate_generation()
 
 
 def run(args, duration=100):
