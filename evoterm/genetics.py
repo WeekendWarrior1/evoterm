@@ -4,8 +4,13 @@ import bitarray
 
 def populate_neurons(internal_neurons):
 	neurons = {
-		'sDtC' : {'type':'sensory', 'id':0},
+		'sDtA' : {'type':'sensory', 'id':0},
 		'sDtP' : {'type':'sensory', 'id':1},
+		'sDpX' : {'type':'sensory', 'id':2},
+		'sDnX' : {'type':'sensory', 'id':3},
+		'sDpY' : {'type':'sensory', 'id':4},
+		'sDnY' : {'type':'sensory', 'id':5},
+		'sDpn' : {'type':'sensory', 'id':6},
 		'aMvX' : {'type':'action', 'id':0},
 		'aMvY' : {'type':'action', 'id':1}}
 	

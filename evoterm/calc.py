@@ -1,4 +1,5 @@
 import math
+import random
 import time
 
 
@@ -15,6 +16,14 @@ def activation(x, func, bias=0):
 		return (max(0, x) + bias)
 
 
+def random_coordinate(habitat, environs_range, start=1,):
+		(x, y) = (random.randint(start, environs_range) for _ in range(2))
+		if habitat[x][y]['occupant']:
+			return random_coordinate(habitat, environs_range)			
+		else:	
+			return (x, y)
+
+
 def thue_morse_index(number, base):
     # https://math.stackexchange.com/questions/776219/how-to-generalize-the-thue-morse-sequence-to-more-than-two-symbols
     # https://stackoverflow.com/questions/2267362/how-to-convert-an-integer-to-a-string-in-any-base
@@ -24,16 +33,13 @@ def thue_morse_index(number, base):
     while number:
         digits.append(int(number % base))
         number //= base
+        if number == 1:
+        	break
     return sum(digits[::-1]) % base
+
 
 def nap_duration(timestamp, frame_rate=1):
 	nap = ((1000000000 / frame_rate) - (time.time_ns() - timestamp)) / 1000000000
 	if nap > 0: 
 		time.sleep(nap)
-
-
-
-
-
-
 

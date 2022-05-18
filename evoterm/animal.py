@@ -7,21 +7,36 @@ import calc
 import genetics
 
 
-class Cell:
+class Animal:
 	
-	def __init__(self, genome, neurons, x=0, y=0):
+	def __init__(self, args, genome, neurons, x=0, y=0):
+		self.args = args
+		self.type = 'animal'
 		self.brain = nx.DiGraph()
 		self.neurons = neurons
 		self.genome = genome
 		self.colour = []
 		self.decode_genome()
-		self.neuron_functions = {
-			'sDtC' : self.detect_cell,
-			'sDtP' : self.detect_plant}
 		self.x = x
 		self.y = y
+		self.wild_range = []
 		self.age = 0
 		self.energy = 0
+		self.pain = 0
+		self.neuron_functions = {
+			'sDtA' : self.detect_animal,
+			'sDtP' : self.detect_plant,
+			'sDpX' : self.detect_pos_x,
+			'sDnX' : self.detect_neg_x,
+			'sDpY' : self.detect_pos_y,
+			'sDnY' : self.detect_neg_y,
+			'sDpn' : self.detect_pain}
+
+	def get_wild_range(self, wild, wild_range):
+		for x, y in itertools.product([-1, 1], [-1, 1]):
+			if (self.x + x, self.y + y) in wild.valid_wild:
+				wild_range.append((self.x + x, self.y + y))
+		return wild_range
 
 	def decode_genome(self, mutation_chance=0.01):
 		colours = []
@@ -85,45 +100,55 @@ class Cell:
 			colours_out.append(sum(tmp) // len(tmp))
 		return colours_out
 	
-	def fire_neurons(self, cells, index, env_size, coordinates, term):
+	def action(self, term, wild, soil, turn_stack):
+		
+		self.wild_range = self.get_wild_range(wild, self.wild_range)
+		if self.pain > 0:
+			self.pain -= 1
+
 		for neuron in self.brain.nodes: 
 			if self.neurons[neuron]['type'] == 'sensory':
-				self.neuron_functions[neuron](coordinates)
+				self.neuron_functions[neuron](wild, soil)
 		
 		for neuron in self.brain.nodes:
 			if self.neurons[neuron]['type'] in ['internal', 'action']:
 				self.sum_neuron_inputs(neuron)
 		
-		self.process_movement(coordinates, env_size)
+		self.process_movement(wild)
 		
-		if coordinates[self.x][self.y]['occupant'] == 'plant':
-			self.energy += 1
-		if self.energy == 2:	
-			self.reproduce(cells, coordinates, term)
+		if soil.soil[self.x][self.y]['plant']:
+			self.energy += soil.soil[self.x][self.y]['plant_energy']
+			soil.soil[self.x][self.y]['plant'] = None
+			soil.soil[self.x][self.y]['plant_energy'] = 0
+			soil.soil[self.x][self.y]['dung'] = True
+
+		if self.energy >= 30:	
+			self.reproduce(term, wild, soil, turn_stack)
+		
 		self.age += 1
 		return self.death()
 
-	def detect_cell(self, coordinates):
-		cells = self.detect(coordinates, 'cell')
-		self.brain.nodes['sDtC']['output'] = (1 / 8) * cells
+	def detect_animal(self, wild, soil):
+		nearby_animals = self.detect(wild, soil, 'animal')
+		self.brain.nodes['sDtA']['output'] = (1 / 8) * nearby_animals
 
-	def detect_plant(self, coordinates):
-		plants = self.detect(coordinates, 'plant')
-		self.brain.nodes['sDtP']['output'] = (1 / 8) * plants
+	def detect_plant(self, wild, soil):
+		nearby_plants = self.detect(wild, soil, 'plant')
+		self.brain.nodes['sDtP']['output'] = (1 / 8) * nearby_plants
 
-	def detect(self, coordinates, target):
+	def detect(self, wild, soil, target):
 		count = 0
 		open_space = []
-		for x, y in itertools.product([-1, 1], [-1, 1]):
-			if target == 'cell':	
-				if coordinates[self.x + x][self.y + y]['occupied'] == True:
+		for x, y in self.wild_range:
+			if target == 'animal':	
+				if wild.wild[x][y]['occupant']:
 					count += 1
 			elif target == 'plant':
-				if coordinates[self.x + x][self.y + y]['occupant'] == 'plant':
+				if soil.soil[x][y]['plant']:
 					count += 1
 			elif target == 'space':
-				if coordinates[self.x + x][self.y + y]['occupied'] == False:
-					open_space.append((self.x + x, self.y + y))
+				if wild.wild[x][y]['occupant'] == None:
+					open_space.append((x, y))
 		if target != 'space':
 			return count
 		elif target == 'space':
@@ -137,42 +162,77 @@ class Cell:
 				if v_neuron == neuron]), 
 				'tanh')
 
-	def process_movement(self, coordinates, env_size):	
+	def process_movement(self, wild):	
 		neuron_data = [['aMvX', 0, self.x], ['aMvY', 0, self.y]]
 		for data in neuron_data:
 			if data[0] in self.brain.nodes:
 				if self.brain.nodes[data[0]]['output'] >= 0.9:
-					if (data[2] + 1) <= env_size:
+					if (data[2] + 1) <= self.args.environment:
 						data[1] = 1
 				elif self.brain.nodes[data[0]]['output'] <= (-0.9):
 					if (data[2] - 1) >= 1:
 						data[1] = -1
 
-		if coordinates\
+		if wild.wild\
 		[self.x + neuron_data[0][1]]\
 		[self.y + neuron_data[1][1]]\
-		['occupied'] == False:
+		['occupant'] == None:
 			self.x += neuron_data[0][1]
 			self.y += neuron_data[1][1]
+		if wild.wild[self.x][self.y]['effect'] == 'pain':
+			self.pain += 1
 
-	def reproduce(self, cells, coordinates, term):	
-		open_space = self.detect(coordinates, 'space')
-		if len(open_space) != 0:
+	def reproduce(self, term, wild, soil, turn_stack):	
+		open_space = self.detect(wild, soil, 'space')
+		if len(open_space) != 0:		
 			x, y = random.sample(open_space, 1)[0]
-			cells.append(Cell(self.genome, self.neurons, x, y))
+			wild.animals.append(Animal(
+				self.args, self.genome, self.neurons, x, y))
+			turn_stack.append(wild.animals[-1])
 			print(
-				term.move_xy(cells[-1].x, cells[-1].y) + 
+				term.move_xy(wild.animals[-1].x, wild.animals[-1].y) + 
 				term.color_rgb(
-					cells[-1].colour[0], 
-					cells[-1].colour[1], 
-					cells[-1].colour[2]) 
+					wild.animals[-1].colour[0], 
+					wild.animals[-1].colour[1], 
+					wild.animals[-1].colour[2]) 
 					+ '@')
-			coordinates[x][y]['occupied'] = True
-			coordinates[x][y]['occupant'] = cells[-1]
-			self.energy == 0
+			wild.wild[x][y]['occupant'] = wild.animals[-1]
+			self.energy -= 20
 
 	def death(self):
-		if self.age == 100:
+		if self.age == 50:
+			return True
+		if self.pain == 5:
 			return True
 
-	
+	def detect_edge(self, polarity, axis):
+		if polarity == 'positive':
+			return (1 / self.args.environment) * axis
+		elif polarity == 'negative':
+			return (1 / self.args.environment) * (self.args.environment - axis)
+
+	def detect_pos_x(self, wild, soil):
+		self.brain.nodes['sDpX']['output'] = self.detect_edge(
+			'positive', self.x)
+
+	def detect_neg_x(self, wild, soil):
+		self.brain.nodes['sDnX']['output'] = self.detect_edge(
+			'negative', self.x)
+
+	def detect_pos_y(self, wild, soil):
+		self.brain.nodes['sDpY']['output'] = self.detect_edge(
+			'positive', self.y)
+
+	def detect_neg_y(self, wild, soil):
+		self.brain.nodes['sDnY']['output'] = self.detect_edge(
+			'negative', self.y)
+
+	def detect_pain(self):
+		if self.pain > 0:
+			return 1.0
+		else:
+			return 0.0
+
+
+
+
