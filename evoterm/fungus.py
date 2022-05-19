@@ -7,7 +7,8 @@ class Fungus:
 	
 	def __init__(self, x, y):
 		self.type = 'fungus'
-		self.energy = 0
+		self.energy = 50
+		self.colour = [random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)]
 		self.x = x
 		self.y = y
 		self.mycelium = nx.DiGraph()
@@ -41,6 +42,7 @@ class Mycelium:
 		return soil_range
 
 	def action(self, fungus, wild, soil):
+		self.energy += 1
 		if len(self.soil_range) == 0:
 			self.soil_range = self.get_soil_range(soil, self.soil_range)
 		
@@ -63,11 +65,15 @@ class Mycelium:
 							self.energy += 1
 							fungus.energy -= 1
 						self.reproduce(fungus, x, y)
+				else:
+					self.energy += 10
+					soil.soil[x][y]['dung'] = False
+
 
 	def decompose(self, soil_patch):
 		self.energy += soil_patch['detritus_energy']
 		soil_patch['detritus_energy'] = 0
-		soil_patch['detritus'] = False
+		soil_patch['detritus'] = None
 
 	def reproduce(self, fungus, x, y):
 		fungus.spores.append([

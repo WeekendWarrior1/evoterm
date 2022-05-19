@@ -39,7 +39,7 @@ class Soil:
 			fungi.append(fungus.Fungus(x, y))
 		return fungi
 
-	def spawn_plant(self, term):
+	def spawn_plant(self, term, draw):
 		if not random.randint(0, self.args.environment):
 			x, y = calc.random_coordinate(
 			self.soil, self.args.environment)
@@ -48,12 +48,23 @@ class Soil:
 				self.soil[x][y]['plant'] = True
 				self.soil[x][y]['plant_energy'] = self.soil[x][y]['fertility']
 				self.soil[x][y]['fertility'] = 0
-				print(
-					term.move_xy(x, y) + 
-					term.color_rgb(0, 255, 0) + 
-					'.,vyVYf4q?P'[self.soil[x][y]['plant_energy'] - 10])
+				if draw == True:
+					print(
+						term.move_xy(x, y) + 
+						term.color_rgb(0, 255, 0) + 
+						#'.,vyVYf4q?P'[self.soil[x][y]['fertility']])
+						'.,vyVYf4q?P'[random.randint(0,9)])
 
 	def raise_fertility(self):
 		for x, y in self.valid_soil:
 			if self.soil[x][y]['fertility'] < 10:
 				self.soil[x][y]['fertility'] += 1
+
+	def set_soil_data(self, term, draw, x, y, occupant, effect, colour, char=''):	
+		if draw == False:
+			print(
+				term.move_xy(x, y) + 
+				term.color_rgb(colour[0], colour[1], colour[2]) + 
+				char)
+		#self.wild[x][y]['occupant'] = occupant
+		#self.wild[x][y]['effect'] = effect

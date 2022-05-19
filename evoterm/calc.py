@@ -18,7 +18,7 @@ def activation(x, func, bias=0):
 
 def random_coordinate(habitat, environs_range, start=1,):
 		(x, y) = (random.randint(start, environs_range) for _ in range(2))
-		if habitat[x][y]['occupant']:
+		if habitat[x][y]['occupant'] != None:
 			return random_coordinate(habitat, environs_range)			
 		else:	
 			return (x, y)

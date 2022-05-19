@@ -3,75 +3,84 @@ import time
 import blessed
 import matplotlib.pyplot as plt
 import networkx as nx
-import animal
 import calc
-import cli
-import wild
 import genetics
 import soil
 import ui
+import wild
 
 
 
 def let_there_be_life(args):
-	neurons = genetics.populate_neurons(args.neurons)
-
 	term = blessed.Terminal()
 	print(term.clear)
 	ui.init_ui(args, term)
+	neurons = genetics.populate_neurons(args.neurons)
 	env_wild = wild.Wild(args, neurons)
 	env_soil = soil.Soil(args)
-	
 	turn_stack = []
 	for e in env_wild.animals:
 		turn_stack.append(e)
 	for e in env_soil.fungi:
 		turn_stack.append(e)
 	random.shuffle(turn_stack)
+	draw = False
 	with term.hidden_cursor():
 		t = 0
-		while len(env_wild.animals):
+		while True:
 			timestamp = time.time_ns()
 			print(term.move_xy(args.environment + 12, 0) + term.white(str(t)))
+			print(term.move_xy(args.environment + 12, 1) + term.white('     '))
 			print(term.move_xy(args.environment + 12, 1) + term.white(str(len(env_wild.animals))))
 			index = calc.thue_morse_index(t, len(turn_stack))
 			
-			parse_turn(term, env_wild, env_soil, turn_stack, index)
-			env_soil.spawn_plant(term)
-			#env_soil.raise_fertility()
+			parse_turn(term, draw, env_wild, env_soil, turn_stack, index)
+			env_soil.spawn_plant(term, draw)
+			env_soil.raise_fertility()
 
 			#calc.nap_duration(timestamp, len(turn_stack))
+			#calc.nap_duration(timestamp, 24)
 			t += 1
+			#if len(env_wild.animals) == 0:
+			#	print(term.white())
+			#	break
 
 	#plot(env.cells[0], env.cells[0].neurons)
 	
-def parse_turn(term, wild, soil, turn_stack, index):
+def parse_turn(term, draw, wild, soil, turn_stack, index):
 	turn = turn_stack[index]
 	if turn.type == 'animal':
-		turn_animal(term, wild, soil, turn_stack, turn_stack[index])
-		#wild.animals[turn[2:]].process()
+		turn_animal(term, draw, wild, soil, turn_stack, index, turn_stack[index])
 	elif turn.type == 'fungus':
-		turn_fungi(wild, soil, turn_stack[index])
-		#soil.fungi[turn[2:]].process()
+		turn_fungi(term, draw, wild, soil, turn_stack[index])
 
-def turn_animal(term, wild, soil, turn_stack, animal):
+def turn_animal(term, draw, wild, soil, turn_stack, index, _animal):
 	wild.set_wild_data(
-		term, animal.x, animal.y, None, None, [0, 0, 0], ' ')
-	if animal.action(term, wild, soil, turn_stack) == True:
-		soil.soil[animal.x][animal.y]['detritus'] = 'animal'
-		soil.soil[animal.x][animal.y]['detritus_energy'] += animal.energy
-		wild.animals.remove(animal)
-	else:
+		term, draw, _animal.x, _animal.y, None, None, [0, 0, 0], ' ')
+
+	birth, death = _animal.action(term, wild, soil)
+	
+	if birth == True:
+		turn_stack.append(wild.animals[-1])		
+	if death == True:
+		soil.soil[_animal.x][_animal.y]['detritus'] = 'animal'
+		soil.soil[_animal.x][_animal.y]['detritus_energy'] += _animal.energy
 		wild.set_wild_data(
-			term, animal.x, animal.y, animal, None, animal.colour, '@')		
+			term, draw, _animal.x, _animal.y, None, None, [0, 0, 0], ' ')
+		wild.animals.remove(_animal)
+		del turn_stack[index]
+	elif death == False:
+		wild.set_wild_data(
+			term, draw, _animal.x, _animal.y, _animal, None, _animal.colour, '@')		
 
-
-def turn_fungi(wild, soil, fungus):
-	fungus.action(wild, soil)	
-
-
-
-
+def turn_fungi(term, draw, wild, soil, _fungus):
+	
+	_fungus.action(wild, soil)
+	for i, f in enumerate(soil.fungi):
+		for i, m in enumerate(f.mycelium.nodes):
+		#if soil.soil[x][y]['occupant']:
+			soil.set_soil_data(
+				term, draw, f.mycelium.nodes[m]['data'].x, f.mycelium.nodes[m]['data'].y, None, None, f.colour, '%')
 
 def plot(cell, neurons):
 	e_positive = \

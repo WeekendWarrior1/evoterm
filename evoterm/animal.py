@@ -32,25 +32,160 @@ class Animal:
 			'sDnY' : self.detect_neg_y,
 			'sDpn' : self.detect_pain}
 
+	def action(self, term, wild, soil):
+		self.wild_range = self.get_wild_range(wild, self.wild_range)	
+		if self.pain > 0:
+			self.pain -= 1
+
+		for neuron in self.brain.nodes: 
+			if self.neurons[neuron]['type'] == 'sensory':
+				self.neuron_functions[neuron](wild, soil)
+		
+		for neuron in self.brain.nodes:
+			if self.neurons[neuron]['type'] in ['internal', 'action']:
+				self.sum_neuron_inputs(neuron)
+		
+		self.process_movement(wild)
+		
+		if random.randint(0, 10) == 0:
+			soil.soil[self.x][self.y]['dung'] = True
+
+		if soil.soil[self.x][self.y]['plant']:
+			self.energy += soil.soil[self.x][self.y]['plant_energy']
+			soil.soil[self.x][self.y]['plant'] = None
+			soil.soil[self.x][self.y]['plant_energy'] = 0
+			soil.soil[self.x][self.y]['dung'] = True
+		
+		birth = False
+		if self.energy >= 20:
+			open_patch = self.detect(wild, soil, 'space')
+			if len(open_patch) > 0:
+				birth = self.reproduce(wild, open_patch)
+		self.age += 1
+		death = self.death()
+		return (birth, death)
+
 	def get_wild_range(self, wild, wild_range):
 		for x, y in itertools.product([-1, 1], [-1, 1]):
 			if (self.x + x, self.y + y) in wild.valid_wild:
 				wild_range.append((self.x + x, self.y + y))
 		return wild_range
 
+	def sum_neuron_inputs(self, neuron):
+		self.brain.nodes[neuron]['output'] = calc.activation(
+			sum([
+				(data['weight'] * self.brain.nodes[u_neuron]['output']) \
+				for u_neuron, v_neuron, data in self.brain.edges(data=True) \
+				if v_neuron == neuron]), 
+				'tanh')
+
+	def process_movement(self, wild):	
+		axes = [['aMvX', 0], ['aMvY', 0]]
+		for axis in axes:
+			if axis[0] in self.brain.nodes:
+				if self.brain.nodes[axis[0]]['output'] >= 0.9:
+						axis[1] = 1
+				elif self.brain.nodes[axis[0]]['output'] <= (-0.9):
+						axis[1] = -1
+		if (self.x + axes[0][1], self.y + axes[1][1]) in self.wild_range:
+			if wild.wild[self.x + axes[0][1]][self.y + axes[1][1]]['occupant'] == None:
+				self.x += axes[0][1]
+				self.y += axes[1][1]
+
+	def reproduce(self, wild, open_patch):					
+		x, y = random.sample(open_patch, 1)[0]		
+		wild.animals.append(Animal(
+			self.args, self.genome, self.neurons, x, y))
+		wild.wild[x][y]['occupant'] = wild.animals[-1]
+		self.energy -= 20
+		return True
+		
+	def death(self):
+		if self.age == 100:
+			return True
+		elif self.pain == 5:
+			return True
+		else:
+			return False
+
+	def detect(self, wild, soil, target):
+		count = 0
+		open_space = []
+		for x, y in self.wild_range:
+			if target == 'animal':	
+				if wild.wild[x][y]['occupant']:
+					count += 1
+			elif target == 'plant':
+				if soil.soil[x][y]['plant']:
+					count += 1
+			elif target == 'space':
+				if wild.wild[x][y]['occupant'] == None:
+					open_space.append((x, y))
+		if target != 'space':
+			return count
+		elif target == 'space':
+			return open_space
+
+	def detect_animal(self, wild, soil):
+		nearby_animals = self.detect(wild, soil, 'animal')
+		self.brain.nodes['sDtA']['output'] = (1 / 8) * nearby_animals
+
+	def detect_plant(self, wild, soil):
+		nearby_plants = self.detect(wild, soil, 'plant')
+		self.brain.nodes['sDtP']['output'] = (1 / 8) * nearby_plants
+
+	def detect_edge(self, polarity, axis):
+		if polarity == 'positive':
+			return (1 / self.args.environment) * axis
+		elif polarity == 'negative':
+			return (1 / self.args.environment) * (self.args.environment - axis)
+
+	def detect_pos_x(self, wild, soil):
+		self.brain.nodes['sDpX']['output'] = self.detect_edge(
+			'positive', self.x)
+
+	def detect_neg_x(self, wild, soil):
+		self.brain.nodes['sDnX']['output'] = self.detect_edge(
+			'negative', self.x)
+
+	def detect_pos_y(self, wild, soil):
+		self.brain.nodes['sDpY']['output'] = self.detect_edge(
+			'positive', self.y)
+
+	def detect_neg_y(self, wild, soil):
+		self.brain.nodes['sDnY']['output'] = self.detect_edge(
+			'negative', self.y)
+
+	def detect_pain(self):
+		if self.pain > 0:
+			return 1.0
+		else:
+			return 0.0
+
 	def decode_genome(self, mutation_chance=0.01):
-		colours = []
 		for gene in self.genome:
 			if random.random() <= mutation_chance:
 				gene = self.mutate(gene)
-			colours.append(self.get_colour(gene))
+			self.colour.append([
+				bitarray.util.ba2int(gene[0:8]),
+				bitarray.util.ba2int(gene[8:16]),
+				bitarray.util.ba2int(gene[16:24])])
 			self.decode_gene(gene)
-		self.colour = self.average_colour(colours, self.colour)
+		self.colour = self.average_colour(self.colour)
 
 	def mutate(self, gene):
 		gene[random.sample([i for i in range(24)], 1)[0]] \
 		= random.getrandbits(1)
 		return gene
+
+	def average_colour(self, colour):
+		rgb = [0, 0, 0]
+		for value in colour:
+			for i in range(3):
+				rgb[i] += value[i] 
+		for i in range(3):
+			rgb[i] = rgb[i] // len(colour)
+		return rgb
 
 	def decode_gene(self, gene):
 		u_neuron = \
@@ -86,153 +221,4 @@ class Animal:
 				for i, _ in enumerate(neurons)],
 					key=lambda x:abs(x - neuron_id)))][0]}'''
 
-	def get_colour(self, gene):
-		r = bitarray.util.ba2int(gene[0:8])
-		g = bitarray.util.ba2int(gene[8:16])
-		b = bitarray.util.ba2int(gene[16:24])
-		return [r, g, b]
-
-	def average_colour(self, colours_in, colours_out):
-		for i in range(3):
-			tmp = []
-			for colour in colours_in:
-				tmp.append(colour[i])
-			colours_out.append(sum(tmp) // len(tmp))
-		return colours_out
 	
-	def action(self, term, wild, soil, turn_stack):
-		
-		self.wild_range = self.get_wild_range(wild, self.wild_range)
-		if self.pain > 0:
-			self.pain -= 1
-
-		for neuron in self.brain.nodes: 
-			if self.neurons[neuron]['type'] == 'sensory':
-				self.neuron_functions[neuron](wild, soil)
-		
-		for neuron in self.brain.nodes:
-			if self.neurons[neuron]['type'] in ['internal', 'action']:
-				self.sum_neuron_inputs(neuron)
-		
-		self.process_movement(wild)
-		
-		if soil.soil[self.x][self.y]['plant']:
-			self.energy += soil.soil[self.x][self.y]['plant_energy']
-			soil.soil[self.x][self.y]['plant'] = None
-			soil.soil[self.x][self.y]['plant_energy'] = 0
-			soil.soil[self.x][self.y]['dung'] = True
-
-		if self.energy >= 30:	
-			self.reproduce(term, wild, soil, turn_stack)
-		
-		self.age += 1
-		return self.death()
-
-	def detect_animal(self, wild, soil):
-		nearby_animals = self.detect(wild, soil, 'animal')
-		self.brain.nodes['sDtA']['output'] = (1 / 8) * nearby_animals
-
-	def detect_plant(self, wild, soil):
-		nearby_plants = self.detect(wild, soil, 'plant')
-		self.brain.nodes['sDtP']['output'] = (1 / 8) * nearby_plants
-
-	def detect(self, wild, soil, target):
-		count = 0
-		open_space = []
-		for x, y in self.wild_range:
-			if target == 'animal':	
-				if wild.wild[x][y]['occupant']:
-					count += 1
-			elif target == 'plant':
-				if soil.soil[x][y]['plant']:
-					count += 1
-			elif target == 'space':
-				if wild.wild[x][y]['occupant'] == None:
-					open_space.append((x, y))
-		if target != 'space':
-			return count
-		elif target == 'space':
-			return open_space
-
-	def sum_neuron_inputs(self, neuron):
-		self.brain.nodes[neuron]['output'] = calc.activation(
-			sum([
-				(data['weight'] * self.brain.nodes[u_neuron]['output']) \
-				for u_neuron, v_neuron, data in self.brain.edges(data=True) \
-				if v_neuron == neuron]), 
-				'tanh')
-
-	def process_movement(self, wild):	
-		neuron_data = [['aMvX', 0, self.x], ['aMvY', 0, self.y]]
-		for data in neuron_data:
-			if data[0] in self.brain.nodes:
-				if self.brain.nodes[data[0]]['output'] >= 0.9:
-					if (data[2] + 1) <= self.args.environment:
-						data[1] = 1
-				elif self.brain.nodes[data[0]]['output'] <= (-0.9):
-					if (data[2] - 1) >= 1:
-						data[1] = -1
-
-		if wild.wild\
-		[self.x + neuron_data[0][1]]\
-		[self.y + neuron_data[1][1]]\
-		['occupant'] == None:
-			self.x += neuron_data[0][1]
-			self.y += neuron_data[1][1]
-		if wild.wild[self.x][self.y]['effect'] == 'pain':
-			self.pain += 1
-
-	def reproduce(self, term, wild, soil, turn_stack):	
-		open_space = self.detect(wild, soil, 'space')
-		if len(open_space) != 0:		
-			x, y = random.sample(open_space, 1)[0]
-			wild.animals.append(Animal(
-				self.args, self.genome, self.neurons, x, y))
-			turn_stack.append(wild.animals[-1])
-			print(
-				term.move_xy(wild.animals[-1].x, wild.animals[-1].y) + 
-				term.color_rgb(
-					wild.animals[-1].colour[0], 
-					wild.animals[-1].colour[1], 
-					wild.animals[-1].colour[2]) 
-					+ '@')
-			wild.wild[x][y]['occupant'] = wild.animals[-1]
-			self.energy -= 20
-
-	def death(self):
-		if self.age == 50:
-			return True
-		if self.pain == 5:
-			return True
-
-	def detect_edge(self, polarity, axis):
-		if polarity == 'positive':
-			return (1 / self.args.environment) * axis
-		elif polarity == 'negative':
-			return (1 / self.args.environment) * (self.args.environment - axis)
-
-	def detect_pos_x(self, wild, soil):
-		self.brain.nodes['sDpX']['output'] = self.detect_edge(
-			'positive', self.x)
-
-	def detect_neg_x(self, wild, soil):
-		self.brain.nodes['sDnX']['output'] = self.detect_edge(
-			'negative', self.x)
-
-	def detect_pos_y(self, wild, soil):
-		self.brain.nodes['sDpY']['output'] = self.detect_edge(
-			'positive', self.y)
-
-	def detect_neg_y(self, wild, soil):
-		self.brain.nodes['sDnY']['output'] = self.detect_edge(
-			'negative', self.y)
-
-	def detect_pain(self):
-		if self.pain > 0:
-			return 1.0
-		else:
-			return 0.0
-
-
-
-
