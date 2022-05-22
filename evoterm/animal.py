@@ -87,7 +87,7 @@ class Animal:
 						axis[1] = 1
 				elif self.brain.nodes[axis[0]]['output'] <= (-0.9):
 						axis[1] = -1
-		if (self.x + axes[0][1], self.y + axes[1][1]) in self.wild_range:
+		if (self.x + axes[0][1], self.y +a xes[1][1]) in self.wild_range:
 			if wild.wild[self.x + axes[0][1]][self.y + axes[1][1]]['occupant'] == None:
 				self.x += axes[0][1]
 				self.y += axes[1][1]

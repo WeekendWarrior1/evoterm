@@ -24,7 +24,7 @@ def let_there_be_life(args):
 	for e in env_soil.fungi:
 		turn_stack.append(e)
 	random.shuffle(turn_stack)
-	draw = False
+	draw = True
 	with term.hidden_cursor():
 		t = 0
 		while True:
