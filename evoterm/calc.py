@@ -43,3 +43,18 @@ def nap_duration(timestamp, frame_rate=1):
 	if nap > 0: 
 		time.sleep(nap)
 
+def compatability_distance(genotype_a, genotype_b):
+	if genotype_a.fitness > genotype_b:
+		dom_parent = genotype_a
+		sub_parent = genotype_b
+	elif genotype_a.fitness < genotype_b.fitness:
+		dom_parent = genotype_b
+		sub_parent = genotype_a
+	elif genotype_a.fitness == genotype_b.fitness:
+		fit_parent = both
+	innovation_max = max([connection.innovation_id for connection in dom_parent.connections])
+
+
+
+	CD = E + D + avgW
+
