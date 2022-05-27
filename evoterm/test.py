@@ -3,15 +3,16 @@ import time
 import blessed
 import matplotlib.pyplot as plt
 import networkx as nx
+import temp_animal
 import calc
-import genetics
-import soil
-import ui
-import wild
+#import genetics
+#import soil
+#import ui
+#import wild
 
 
 
-def let_there_be_life(args):
+"""def let_there_be_life(args):
 	term = blessed.Terminal()
 	print(term.clear)
 	ui.init_ui(args, term)
@@ -45,9 +46,27 @@ def let_there_be_life(args):
 			#	print(term.white())
 			#	break
 
-	#plot(env.cells[0], env.cells[0].neurons)
+	#plot(env.cells[0], env.cells[0].neurons)"""
+
+def test_temp_animal():
+	sensory_neurons = 12
+	hidden_neurons = 1
+	action_neurons = 4
+	gene_chance = 0.25
+	initial_population = 100
+
+	animals = temp_animal.Animals()
+	animals.init_population(
+		sensory_neurons, hidden_neurons, action_neurons,
+		gene_chance, initial_population)
+
+	for animal in animals.population:
+		animal.brain.load_inputs()
+		animal.brain.run_network()
+
+	print(len(animals.species))
 	
-def parse_turn(term, draw, wild, soil, turn_stack, index):
+"""def parse_turn(term, draw, wild, soil, turn_stack, index):
 	turn = turn_stack[index]
 	if turn.type == 'animal':
 		turn_animal(term, draw, wild, soil, turn_stack, index, turn_stack[index])
@@ -105,5 +124,5 @@ def plot(cell, neurons):
 	ax.margins(0.08)
 	plt.axis("off")
 	plt.tight_layout()
-	plt.show()	
+	plt.show()	"""
 

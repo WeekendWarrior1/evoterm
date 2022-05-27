@@ -1,3 +1,4 @@
+from collections import defaultdict
 import math
 import random
 import time
@@ -43,18 +44,30 @@ def nap_duration(timestamp, frame_rate=1):
 	if nap > 0: 
 		time.sleep(nap)
 
-def compatability_distance(genotype_a, genotype_b):
-	if genotype_a.fitness > genotype_b:
-		dom_parent = genotype_a
-		sub_parent = genotype_b
-	elif genotype_a.fitness < genotype_b.fitness:
-		dom_parent = genotype_b
-		sub_parent = genotype_a
-	elif genotype_a.fitness == genotype_b.fitness:
-		fit_parent = both
-	innovation_max = max([connection.innovation_id for connection in dom_parent.connections])
+def generate_topology(edges):
+	""" copied from:
+	https://stackoverflow.com/questions/29320556/finding-longest-path-in-a-graph
+	"""
+	G = defaultdict(list)
+	for (s, t) in edges:
+		G[s].append(t)
+		G[t].append(s)
+	return G
 
+def DFS(G, v, seen=None, path=None):
+	""" copied from:
+	https://stackoverflow.com/questions/29320556/finding-longest-path-in-a-graph
+	"""
+	if seen is None: seen = []
+	if path is None: path = [v]
 
+	seen.append(v)
 
-	CD = E + D + avgW
+	paths = []
+	for t in G[v]:
+		if t not in seen:
+			t_path = path + [t]
+			paths.append(tuple(t_path))
+			paths.extend(DFS(G, t, seen[:], t_path))
+	return paths
 
