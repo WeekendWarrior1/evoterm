@@ -124,8 +124,6 @@ class Animals:
 			self.population[index].species_id = count
 			
 			for _, i in enumerate(indexes):
-				#print(self.species[count].members[0].brain.synapses)
-				#print(self.population[i].brain.synapses)
 				if comparison_check(
 					self.species[count].members[0], 
 					self.population[i]):
@@ -314,33 +312,4 @@ class Brain:
 
 	def get_output(self, neuron):
 		return neuron.sum_output
-
-	
-
-
-
-
-
-
-
-
-
-"""
-sensory_neurons = 12
-hidden_neurons = 1
-action_neurons = 4
-gene_chance = 0.25
-initial_population = 100
-
-animals = Animals()
-animals.init_population(
-	sensory_neurons, hidden_neurons, action_neurons,
-	gene_chance, initial_population)
-
-for animal in animals.population:
-	animal.brain.load_inputs()
-	animal.brain.run_network()
-
-print(len(animals.species))"""
-
 
